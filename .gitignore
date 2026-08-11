@@ -1,0 +1,9 @@
+.superpowers/
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+env/
+data/
+*.duckdb
+*.sqlite
