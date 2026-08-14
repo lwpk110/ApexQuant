@@ -24,6 +24,6 @@ apps/web/
 docs/
 ```
 
-从 [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) 了解边界，从 [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) 运行检查和测试。当前最小能力包括 `RiskGate`、模拟订单评估服务和 `apexquant doctor` CLI；数据同步、回测引擎、模拟账户记账和 Web 页面按 SRS 逐步实现。
+从 [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) 了解边界，从 [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) 运行检查和测试；完整启动、使用、API 和故障排查见 [docs/MVP-USAGE.md](./docs/MVP-USAGE.md)。当前 MVP 提供本地 HTTP API、运行 provenance、数据质量版本化、可复现回测和模拟执行审计链。
 
-Web 原型复刻已完成第一轮八页实现：页面位于 `apps/web/src/pages`，规格、测试和实现按 SDD/TDD 顺序维护。运行方式见 [apps/web/README.md](./apps/web/README.md)，原型与规格证据见 `docs/sdd/` 与 `openspec/specs/`。
+Web 控制室已覆盖八个入口：页面位于 `apps/web/src/pages`，通过 `apps/web/src/api.ts` 连接本地 API；规格、测试和实现按 SDD/TDD 顺序维护。原型与规格证据见 `docs/sdd/` 与 `openspec/specs/`。

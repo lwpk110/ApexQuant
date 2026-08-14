@@ -8,6 +8,22 @@
 
 ## 常用命令
 
+### 启动 MVP
+
+后端和前端需要分别启动。完整步骤和 API 示例见 [MVP-USAGE.md](./MVP-USAGE.md)。
+
+```powershell
+# 终端 A（仓库根目录）
+$env:PYTHONPATH = "src"
+python -m apexquant.interfaces.http --host 127.0.0.1 --port 8000
+
+# 终端 B
+cd apps\web
+pnpm dev -- --host 127.0.0.1 --port 4173
+```
+
+### 检查与测试
+
 ```powershell
 python -m unittest discover -s tests -v
 python -m apexquant.interfaces.cli doctor --json
