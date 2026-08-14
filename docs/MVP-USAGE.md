@@ -42,7 +42,7 @@ $env:PYTHONPATH = "src"
 python -m apexquant.interfaces.http --host 127.0.0.1 --port 8000
 ```
 
-看到 `ApexQuant API listening on ...:8000` 后，API 已启动。
+看到 `Uvicorn running on http://127.0.0.1:8000` 后，API 已启动。FastAPI 文档位于 <http://127.0.0.1:8000/docs>。
 
 终端 B：启动前端：
 
