@@ -3,6 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { BacktestPage } from "./BacktestPage";
 
+vi.mock("../api", () => ({
+  submitBacktest: vi.fn().mockRejectedValue(new Error("backend unavailable in component test")),
+}));
+
 describe("BacktestPage", () => {
   it("renders the single-page reproducible configuration", () => {
     render(<BacktestPage />);
