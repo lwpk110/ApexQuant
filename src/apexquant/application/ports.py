@@ -1,0 +1,45 @@
+"""Ports used by application services.
+
+Concrete database, market-data and notification adapters can implement these protocols without
+changing domain rules. No network or broker dependency is required by the scaffold.
+"""
+
+from datetime import datetime
+from typing import Protocol
+
+from apexquant.domain.models import AccountSnapshot, MarketSnapshot, OrderRequest
+from apexquant.domain.provenance import AuditEvent, ConfigVersion, RunRecord
+
+
+class AccountSnapshotPort(Protocol):
+    def latest(self, *, captured_before: datetime | None = None) -> AccountSnapshot: ...
+
+
+class MarketDataPort(Protocol):
+    def latest(self, symbol: str) -> MarketSnapshot: ...
+
+
+class AuditSink(Protocol):
+    def append(self, *, run_id: str, event_type: str, summary: str, occurred_at: datetime) -> None: ...
+
+
+class PaperOrderSink(Protocol):
+    def submit(self, order: OrderRequest, *, normalized_quantity: int) -> str: ...
+
+
+class RunRepository(Protocol):
+    def create(self, *, strategy_version: str, data_version: str, cost_model_version: str, random_seed: int, created_at: datetime) -> RunRecord: ...
+    def get(self, run_id: str) -> RunRecord: ...
+    def transition(self, run_id: str, status: str) -> RunRecord: ...
+
+
+class AuditRepository(Protocol):
+    def append(self, *, run_id: str, event_type: str, summary: str, occurred_at: datetime) -> AuditEvent: ...
+    def list_for_run(self, run_id: str) -> tuple[AuditEvent, ...]: ...
+
+
+class ConfigurationRepository(Protocol):
+    def save(self, *, scope: str, values: dict[str, object], effective_at: datetime) -> ConfigVersion: ...
+    def current(self, scope: str) -> ConfigVersion | None: ...
+    def get_version(self, version_id: str) -> ConfigVersion: ...
+    def history(self, scope: str) -> tuple[ConfigVersion, ...]: ...

@@ -7,3 +7,7 @@ env/
 data/
 *.duckdb
 *.sqlite
+apps/web/node_modules/
+apps/web/dist/
+apps/web/.vite-*.log
+apps/web/tsconfig.tsbuildinfo
