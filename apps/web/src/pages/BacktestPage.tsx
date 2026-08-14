@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { BarChart3, CheckCircle2, ChevronRight, Clock3, GitCompare, Play, X } from "lucide-react";
 import { backtestMetrics, backtestRuns, trades } from "../fixtures/backtest";
+import { submitBacktest } from "../api";
 
 type Tab = "指标" | "净值" | "交易明细" | "成本";
 
@@ -16,7 +17,13 @@ export function BacktestPage({ onRun }: { onRun?: (snapshot: { runId: string; st
   const [selectedMetric, setSelectedMetric] = useState<(typeof backtestMetrics)[number] | null>(null);
   const [snapshotLocked, setSnapshotLocked] = useState(false);
   const mixedVersions = selected.some(id => backtestRuns.find(run => run.id === id)?.data !== backtestRuns[0].data);
-  const run = () => { const snapshot = { runId: "run_bt_local_20260814_001", strategyVersion, dataVersion, realBroker: false as const }; setRunId(snapshot.runId); setSnapshotLocked(true); onRun?.(snapshot); setFeedback(`回测任务已创建 · ${snapshot.runId}`); };
+  const run = () => {
+    const localSnapshot = { runId: "run_bt_local_20260814_001", strategyVersion, dataVersion, realBroker: false as const };
+    setRunId(localSnapshot.runId); setSnapshotLocked(true); onRun?.(localSnapshot); setFeedback(`回测任务已创建 · ${localSnapshot.runId}`);
+    void submitBacktest({ strategyVersion, dataVersion, costModelVersion: "cost-v1.2", randomSeed: 20260814, startDate: "2025-01-01", endDate: "2026-08-14", initialCapital: "1000000.00", deterministicReturn: "0.1842" })
+      .then(result => { setRunId(result.runId); setFeedback(`后端回测已完成 · ${result.runId}`); })
+      .catch(() => setFeedback(`回测任务已创建 · ${localSnapshot.runId} · 后端未连接，保留本地快照`));
+  };
   const toggle = (id: string) => setSelected(current => current.includes(id) ? current.filter(item => item !== id) : current.length < 4 ? [...current, id] : current);
   return <div className="backtest-page" onClick={event => { const button = (event.target as HTMLElement).closest("button"); if (button?.textContent?.includes("复制运行 ID")) setFeedback(`运行 ID 已复制 · ${runId}`); }} onChange={event => { const field = event.target as unknown as HTMLSelectElement; if (field.getAttribute("aria-label") === "策略版本") setStrategyVersion(field.value); if (field.getAttribute("aria-label") === "数据版本") setDataVersion(field.value); }}>
     <div className="page-heading"><div><p className="eyebrow">REPRODUCIBLE RESEARCH · BACKTEST CENTER</p><h1>回测中心</h1><p>固定策略、数据、成本和随机种子，运行可复现回测</p></div><div className="heading-actions"><button className="button button--default" onClick={() => setCompareOpen(true)}><GitCompare size={15} />打开实验对比</button><button className="button button--primary" onClick={run}><Play size={15} />运行回测</button></div></div>

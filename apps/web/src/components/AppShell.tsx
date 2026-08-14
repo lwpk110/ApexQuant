@@ -1,7 +1,8 @@
 import { AlertTriangle, Database, FlaskConical, Gauge, LineChart, PlaySquare, ScrollText, Settings, ShieldCheck } from "lucide-react";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { Destination, Navigate } from "../types";
 import { StatusBadge } from "./StatusBadge";
+import { getHealth } from "../api";
 
 const navigation = [
   ["overview", "总览", Gauge], ["lab", "策略实验室", FlaskConical], ["backtest", "回测中心", LineChart], ["simulation", "模拟执行", PlaySquare],
@@ -11,6 +12,10 @@ const navigation = [
 export function AppShell({ current, onNavigate, children }: { current: Destination; onNavigate: Navigate; children: ReactNode }) {
   const [query, setQuery] = useState("");
   const [searchFeedback, setSearchFeedback] = useState("");
+  const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
+  useEffect(() => {
+    getHealth().then(() => setBackendOnline(true)).catch(() => setBackendOnline(false));
+  }, []);
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const normalizedQuery = query.trim();
@@ -32,7 +37,7 @@ export function AppShell({ current, onNavigate, children }: { current: Destinati
         <span className="topbar-detail topbar-account">模拟账户 · AQ-PAPER-001</span>
         <form className="search" onSubmit={submitSearch}><label><span className="sr-only">全局搜索</span><input value={query} onChange={event => setQuery(event.target.value)} placeholder="搜索策略、标的或运行 ID" /></label><span className="search-feedback" role="status">{searchFeedback}</span></form>
         <button className="alert-button" aria-label="3 条风险告警" onClick={() => onNavigate("risk", { alertFilter: "预警" })}><AlertTriangle size={16} /><b>3</b></button>
-        <StatusBadge tone="positive">运行中</StatusBadge>
+        <StatusBadge tone={backendOnline === false ? "warning" : "positive"}>{backendOnline === false ? "后端未连接" : "运行中"}</StatusBadge>
       </header>
       <main className="workspace">{children}</main>
     </section>
