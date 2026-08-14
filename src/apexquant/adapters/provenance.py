@@ -25,6 +25,9 @@ class InMemoryProvenanceStore:
         except KeyError as exc:
             raise KeyError(f"unknown run: {run_id}") from exc
 
+    def list_runs(self) -> tuple[RunRecord, ...]:
+        return tuple(sorted(self._runs.values(), key=lambda run: run.created_at, reverse=True))
+
     def transition(self, run_id: str, status: RunStatus | str) -> RunRecord:
         current = self.get(run_id)
         next_status = status if isinstance(status, RunStatus) else RunStatus(status)

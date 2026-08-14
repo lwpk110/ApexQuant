@@ -1,8 +1,8 @@
 # ApexQuant MVP 使用手册
 
-本文说明如何在本机启动并验证一期 MVP。当前版本只用于研究、回测和模拟执行，状态保存在内存中；不会连接真实行情、真实账户或真实券商，也不会发送真实委托。
+本文说明如何在本机启动并验证一期 MVP。当前版本只用于研究、回测和模拟执行，运行状态保存在内存中；行情通过后端访问 Yahoo Finance 公共 chart 接口，不连接真实账户或真实券商，也不会发送真实委托。
 
-> 数据边界：总览、策略实验室、模拟执行、账户与风险、数据中心、运行记录和设置的主体内容仍是本地 fixture 快照；健康接口和回测按钮会调用本地 API，但 API 使用内存状态和确定性示例数据，不代表实时市场数据。
+> 数据边界：总览、数据中心和运行记录通过后端 API 读取 Yahoo Finance 行情及后端运行状态。Yahoo 数据无 API key、仅适合研究并受上游限流和服务条款约束；上游不可用时显示 stale/degraded，不伪造行情。账户和券商仍为模拟状态。
 
 ## 1. 环境要求
 
@@ -98,6 +98,10 @@ Invoke-RestMethod -Uri http://127.0.0.1:8000/api/backtests `
 | --- | --- | --- |
 | GET | `/api/health` | 服务状态、时区、真实柜台开关 |
 | GET | `/api/overview` | 总览健康、账户摘要和运行摘要 |
+| GET | `/api/market/quote?symbol=000001.SS` | 公共行情最新报价 |
+| GET | `/api/market/candles?symbol=000001.SS` | 公共行情日线 OHLCV |
+| GET | `/api/data/catalog` | 后端真实数据集目录和质量状态 |
+| GET | `/api/runs` | 当前进程回测运行记录 |
 | GET | `/api/data/versions?datasetId=...` | 数据版本当前值和历史 |
 | POST | `/api/backtests` | 创建可复现回测并返回 run ID/指标 |
 

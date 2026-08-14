@@ -13,6 +13,7 @@ from urllib.parse import parse_qs, urlparse
 
 from apexquant.application.backtest import BacktestRunner
 from apexquant.adapters.data import InMemoryDataRepository
+from apexquant.adapters.market_data import MarketDataError, YahooFinanceAdapter
 from apexquant.adapters.provenance import InMemoryProvenanceStore
 from apexquant.domain.backtest import BacktestSnapshot
 from apexquant.domain.data import assess_quality
@@ -23,6 +24,7 @@ class MVPState:
         self.provenance = InMemoryProvenanceStore()
         self.data = InMemoryDataRepository()
         self.backtests = BacktestRunner(self.provenance, self.provenance)
+        self.market = YahooFinanceAdapter()
 
 
 def _json_value(value: object) -> object:
@@ -75,6 +77,24 @@ class MVPRequestHandler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/overview":
             self._send(HTTPStatus.OK, {"data": self._overview()})
+            return
+        if parsed.path in ("/api/market/quote", "/api/market/candles"):
+            symbol = parse_qs(parsed.query).get("symbol", ["000001.SS"])[0]
+            try:
+                result = self.state.market.get(symbol)
+            except MarketDataError as exc:
+                self._error(HTTPStatus.SERVICE_UNAVAILABLE, exc.code, str(exc))
+                return
+            payload = {"symbol": result.symbol, "source": result.source, "fetchedAt": result.fetched_at, "stale": result.stale, "quality": result.quality}
+            payload["quote" if parsed.path.endswith("quote") else "candles"] = result.quote if parsed.path.endswith("quote") else result.candles
+            self._send(HTTPStatus.OK, {"data": payload})
+            return
+        if parsed.path == "/api/data/catalog":
+            self._send(HTTPStatus.OK, {"data": self._catalog()})
+            return
+        if parsed.path == "/api/runs":
+            runs = [{"runId": run.run_id, "strategyVersion": run.strategy_version, "dataVersion": run.data_version, "status": run.status.value, "createdAt": run.created_at} for run in self.state.provenance.list_runs()]
+            self._send(HTTPStatus.OK, {"data": {"runs": runs, "total": len(runs)}})
             return
         if parsed.path == "/api/data/versions":
             dataset_id = parse_qs(parsed.query).get("datasetId", [""])[0]
@@ -131,12 +151,30 @@ class MVPRequestHandler(BaseHTTPRequestHandler):
         self._send(HTTPStatus.CREATED, {"data": {"runId": result.run_id, "status": run.status.value, "provenance": snapshot, "metrics": result.metrics}})
 
     def _overview(self) -> dict[str, object]:
+        try:
+            market = self.state.market.get("000001.SS")
+            market_data = {"symbol": market.symbol, "quote": market.quote, "source": market.source, "fetchedAt": market.fetched_at, "stale": market.stale, "quality": market.quality}
+        except MarketDataError as exc:
+            market_data = {"symbol": "000001.SS", "source": "yahoo-finance", "stale": True, "quality": {"state": "degraded", "error": exc.code}}
         return {
             "health": {"status": "ready", "timezone": "Asia/Shanghai", "realBroker": False},
             "healthChecks": [{"label": "数据源", "detail": "分钟数据延迟 12 秒", "state": "delayed"}, {"label": "数据库", "detail": "本地账本已同步", "state": "healthy"}],
             "account": {"netAsset": "1248460.32", "availableCash": "434980.76", "positionValue": "813479.56"},
             "activeRuns": [],
+            "market": market_data,
         }
+
+    def _catalog(self) -> dict[str, object]:
+        try:
+            market = self.state.market.get("000001.SS")
+            quality = market.quality
+            fetched = market.fetched_at
+            status = "stale" if market.stale else quality.get("state", "ready")
+            coverage = f"{market.candles[0]['timestamp'][:10]} — {market.candles[-1]['timestamp'][:10]}" if market.candles else "无数据"
+            row = {"dataset": "000001.SS", "type": "指数日线", "source": market.source, "coverage": coverage, "updated": fetched, "missingRate": "0%", "missingBuckets": quality.get("missingBuckets", 0), "adjustment": "未复权", "license": "Yahoo Finance 公共接口；研究用途，遵守服务条款", "status": status, "stale": market.stale}
+        except MarketDataError as exc:
+            row = {"dataset": "000001.SS", "type": "指数日线", "source": "yahoo-finance", "coverage": "不可用", "updated": None, "missingRate": "未知", "missingBuckets": None, "adjustment": "未复权", "license": "Yahoo Finance 公共接口；研究用途", "status": "degraded", "error": exc.code, "stale": True}
+        return {"datasets": [row], "source": "yahoo-finance", "realBroker": False}
 
 
 def create_server(host: str = "127.0.0.1", port: int = 8000) -> ThreadingHTTPServer:
