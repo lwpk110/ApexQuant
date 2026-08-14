@@ -5,7 +5,7 @@ import type { Navigate } from "../types";
 
 export function OverviewPage({ onNavigate }: { onNavigate: Navigate }) {
   const [data, setData] = useState<OverviewResponse | null>(null); const [error, setError] = useState("");
-  const load = () => { setError(""); getOverview().then(setData).catch(e => setError(e.message)); };
+  const load = () => { setError(""); getOverview().then(value => { if (!value?.market?.quote) throw new Error("API 返回的总览数据不完整"); setData(value); }).catch(e => setError(e instanceof Error ? e.message : "总览数据不可用")); };
   useEffect(load, []);
   if (!data && !error) return <div className="panel panel-body"><h1>总览</h1><p>正在从后端加载真实行情...</p></div>;
   if (error) return <div className="panel panel-body"><h1>总览</h1><p role="alert">后端数据不可用：{error}</p><button className="button" onClick={load}><RefreshCw size={15}/>重试</button></div>;
