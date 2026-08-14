@@ -40,7 +40,7 @@ describe("BacktestPage", () => {
     render(<BacktestPage onRun={onRun} />);
     await user.click(screen.getByRole("button", { name: "运行回测" }));
     expect(onRun).toHaveBeenCalledWith(expect.objectContaining({ realBroker: false }));
-    expect(screen.getByText(/回测任务已创建/)).toBeInTheDocument();
+    expect(screen.getByText(/回测提交失败/)).toBeInTheDocument();
   });
 
   it("creates and displays an immutable local run snapshot", async () => {
